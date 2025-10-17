@@ -472,7 +472,7 @@
       document.getElementById('encrypted').textContent = "Gözləyin...";
       document.getElementById('encrypted').style.display = 'block';
       try {
-        const res = await fetch('https://axsolot18-github-io.onrender.com', {
+        const res = await fetch('/encrypt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message, key })
@@ -503,7 +503,7 @@
       document.getElementById('decrypted').textContent = "Gözləyin...";
       document.getElementById('decrypted').style.display = 'block';
       try {
-        const res = await fetch('https://axsolot18-github-io.onrender.com', {
+        const res = await fetch('/decrypt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ encrypted, key })
