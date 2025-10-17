@@ -2,23 +2,57 @@ from flask import Flask, render_template, request, jsonify
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import base64
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+import base64
+import os
+
+def prepare_key(key: str) -> bytes:
+    key = key.encode('utf-8')
+    if len(key) < 16:
+        key = key + b'0' * (16 - len(key))
+    return key[:16]
+
+def aes_encrypt_cbc(plain_text: str, key: str) -> str:
+    key_bytes = prepare_key(key)
+    iv = os.urandom(16)
+    cipher = AES.new(key_bytes, AES.MODE_CBC, iv)
+    padded = pad(plain_text.encode('utf-8'), AES.block_size)
+    encrypted = cipher.encrypt(padded)
+    return base64.b64encode(iv + encrypted).decode('utf-8')
+
+def aes_decrypt_cbc(encrypted_b64: str, key: str) -> str:
+    key_bytes = prepare_key(key)
+    encrypted_data = base64.b64decode(encrypted_b64)
+    iv = encrypted_data[:16]
+    ct = encrypted_data[16:]
+    cipher = AES.new(key_bytes, AES.MODE_CBC, iv)
+    decrypted = unpad(cipher.decrypt(ct), AES.block_size)
+    return decrypted.decode('utf-8')
 
 app = Flask(__name__)
 
 # Şifreleme fonksiyonları
-def aes_encrypt(plain_text, key):
-    key = key.encode('utf-8')[:16]
-    cipher = AES.new(key, AES.MODE_ECB)
-    padded = pad(plain_text.encode('utf-8'), 16)
-    encrypted = cipher.encrypt(padded)
-    return base64.b64encode(encrypted).decode('utf-8')
 
-def aes_decrypt(encrypted_text, key):
-    key = key.encode('utf-8')[:16]
-    cipher = AES.new(key, AES.MODE_ECB)
-    encrypted_bytes = base64.b64decode(encrypted_text)
-    decrypted = unpad(cipher.decrypt(encrypted_bytes), 16)
-    return decrypted.decode('utf-8')
+
+@app.route('/encrypt', methods=['POST'])
+def encrypt():
+    data = request.get_json()
+    try:
+        encrypted = aes_encrypt_cbc(data['message'], data['key'])
+        return jsonify({'encrypted': encrypted})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/decrypt', methods=['POST'])
+def decrypt():
+    data = request.get_json()
+    try:
+        decrypted = aes_decrypt_cbc(data['encrypted'], data['key'])
+        return jsonify({'decrypted': decrypted})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+        
 
 # Ana sayfa
 @app.route('/')
@@ -46,4 +80,5 @@ def decrypt():
         return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
+
     app.run(debug=True)
