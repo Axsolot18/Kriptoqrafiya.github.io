@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import base64
+from flask import Flask, request, jsonify
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 import base64
@@ -30,6 +31,29 @@ def aes_decrypt_cbc(encrypted_b64: str, key: str) -> str:
     decrypted = unpad(cipher.decrypt(ct), AES.block_size)
     return decrypted.decode('utf-8')
 
+app = Flask(__name__)
+
+@app.route('/encrypt', methods=['POST'])
+def encrypt_post():
+    data = request.get_json()
+    message = data.get('message', '')
+    key = data.get('key', '')
+    try:
+        encrypted = aes_encrypt_cbc(message, key)
+        return jsonify({'encrypted': encrypted})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/decrypt', methods=['POST'])
+def decrypt_post():
+    data = request.get_json()
+    encrypted = data.get('encrypted', '')
+    key = data.get('key', '')
+    try:
+        decrypted = aes_decrypt_cbc(encrypted, key)
+        return jsonify({'decrypted': decrypted})
+    except Exception as e:
+        return jsonify({'error': str(e)})
 app = Flask(__name__)
 
 # Şifreleme fonksiyonları
@@ -82,3 +106,4 @@ def decrypt():
 if __name__ == '__main__':
 
     app.run(debug=True)
+
